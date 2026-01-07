@@ -9,6 +9,7 @@
 - [비즈니스 로직 위치: Entity vs Service](#비즈니스-로직-위치-entity-vs-service)
 - [Validation 어노테이션 (@NotNull vs @NotBlank)](#validation-어노테이션-notnull-vs-notblank)
 - [DTO (Data Transfer Object) 패턴](#dto-data-transfer-object-패턴)
+- [Static Factory Method 패턴](#static-factory-method-패턴)
 ---
 
 ## @Builder 어노테이션 정리
@@ -1017,3 +1018,345 @@ public CampingItemResponse create(CampingItemCreateRequest request) {
 
 #### 핵심 원칙
 > **"Entity는 절대 API에 직접 노출하지 않는다. 항상 DTO로 변환한다"**
+
+---
+
+## Static Factory Method 패턴
+
+### 기본 개념
+
+**Static Factory Method란?**
+> 객체를 생성하는 정적(static) 메서드. 생성자 대신 메서드를 통해 객체를 생성하는 패턴
+
+일반적인 생성자 호출 대신 `ClassName.methodName()` 형태로 객체를 생성한다.
+
+### 일반 생성자 vs Static Factory Method
+
+#### 일반 생성자 사용
+
+```java
+// DTO 클래스
+@Getter
+@AllArgsConstructor
+public class CampingItemResponse {
+    private Long id;
+    private String name;
+    private CampingCategory category;
+    private String model;
+    private String description;
+    private Integer stockQuantity;
+    private BigDecimal baseDailyRate;
+    private CampingItemStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}
+
+// Service에서 사용
+public CampingItemResponse findById(Long id) {
+    CampingItem entity = repository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다"));
+
+    // 생성자 직접 호출
+    return new CampingItemResponse(
+        entity.getId(),
+        entity.getName(),
+        entity.getCategory(),
+        entity.getModel(),
+        entity.getDescription(),
+        entity.getStockQuantity(),
+        entity.getBaseDailyRate(),
+        entity.getStatus(),
+        entity.getCreatedAt(),
+        entity.getUpdatedAt()
+    );
+}
+```
+
+**문제점:**
+- 필드가 많으면 코드가 길어짐
+- 어떤 의미로 변환하는지 불명확
+- Entity → DTO 변환 로직이 Service에 흩어짐
+- 필드 순서를 잘못 입력할 위험
+
+#### Static Factory Method 사용
+
+```java
+// DTO 클래스
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class CampingItemResponse {
+    private Long id;
+    private String name;
+    private CampingCategory category;
+    private String model;
+    private String description;
+    private Integer stockQuantity;
+    private BigDecimal baseDailyRate;
+    private CampingItemStatus status;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    // Static Factory Method
+    public static CampingItemResponse from(CampingItem entity) {
+        return new CampingItemResponse(
+            entity.getId(),
+            entity.getName(),
+            entity.getCategory(),
+            entity.getModel(),
+            entity.getDescription(),
+            entity.getStockQuantity(),
+            entity.getBaseDailyRate(),
+            entity.getStatus(),
+            entity.getCreatedAt(),
+            entity.getUpdatedAt()
+        );
+    }
+}
+
+// Service에서 사용
+public CampingItemResponse findById(Long id) {
+    CampingItem entity = repository.findById(id)
+        .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다"));
+
+    // Static Factory Method 호출
+    return CampingItemResponse.from(entity);
+}
+```
+
+### Static Factory Method의 장점
+
+#### 1. 가독성 향상
+
+```java
+// 생성자 직접 호출
+return new CampingItemResponse(entity.getId(), entity.getName(), ...);
+
+// Static Factory Method
+return CampingItemResponse.from(entity);  // "entity로부터 Response를 만든다"는 의미 명확
+```
+
+메서드 이름이 의미를 전달한다. `from()`, `of()`, `valueOf()` 등의 관습적인 이름을 사용한다.
+
+#### 2. 변환 로직 캡슐화
+
+```java
+// 변환 로직이 DTO 안에 모임
+public class CampingItemResponse {
+    public static CampingItemResponse from(CampingItem entity) {
+        // 변환 로직이 한 곳에 집중
+        return new CampingItemResponse(...);
+    }
+}
+```
+
+Entity → DTO 변환 로직이 DTO 클래스에 응집된다.
+
+Service에서는 단순히 `from(entity)`만 호출하면 된다.
+
+#### 3. 유지보수 용이
+
+```java
+// 필드 추가 시
+public class CampingItemResponse {
+    private Long id;
+    private String name;
+    private String imageUrl;  // 새 필드 추가
+
+    public static CampingItemResponse from(CampingItem entity) {
+        return new CampingItemResponse(
+            entity.getId(),
+            entity.getName(),
+            entity.getImageUrl()  // 한 곳만 수정
+        );
+    }
+}
+```
+
+필드가 추가되어도 Static Factory Method 한 곳만 수정하면 된다.
+
+생성자 직접 호출했다면 Service의 모든 코드를 수정해야 한다.
+
+#### 4. 타입 안정성
+
+```java
+// 생성자: 파라미터 순서 잘못 입력 가능
+new CampingItemResponse(
+    entity.getName(),        // 잘못된 순서
+    entity.getId(),
+    ...
+);  // 컴파일 에러는 안 나지만 잘못된 데이터
+
+// Static Factory Method: 메서드 내부에서 올바른 순서 보장
+CampingItemResponse.from(entity);  // 안전
+```
+
+### 네이밍 관습
+
+일반적으로 사용되는 Static Factory Method 이름:
+
+**1. from**
+```java
+// 하나의 파라미터를 받아 인스턴스 생성
+public static CampingItemResponse from(CampingItem entity) { ... }
+```
+
+**2. of**
+```java
+// 여러 파라미터를 받아 인스턴스 생성
+public static LocalDate of(int year, int month, int day) { ... }
+```
+
+**3. valueOf**
+```java
+// from/of와 유사하지만 더 장황한 버전
+public static Integer valueOf(String s) { ... }
+```
+
+**4. getInstance / newInstance**
+```java
+// 싱글톤 패턴에서 주로 사용
+public static Singleton getInstance() { ... }
+```
+
+### 실무 활용 예시
+
+#### Service 계층에서 일관된 사용
+
+```java
+@Service
+@Transactional(readOnly = true)
+@RequiredArgsConstructor
+public class CampingItemService {
+    private final CampingItemRepository repository;
+
+    public CampingItemResponse findById(Long id) {
+        CampingItem entity = repository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다"));
+
+        return CampingItemResponse.from(entity);
+    }
+
+    public List<CampingItemResponse> findAll() {
+        return repository.findAll().stream()
+            .map(CampingItemResponse::from)  // 메서드 참조로 간결하게
+            .toList();
+    }
+
+    @Transactional
+    public CampingItemResponse create(CampingItemCreateRequest request) {
+        CampingItem entity = CampingItem.builder()
+            .name(request.getName())
+            // ...
+            .build();
+
+        CampingItem saved = repository.save(entity);
+        return CampingItemResponse.from(saved);
+    }
+
+    @Transactional
+    public CampingItemResponse update(Long id, CampingItemUpdateRequest request) {
+        CampingItem entity = repository.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다"));
+
+        entity.updateInfo(request.getName(), request.getModel(),
+                         request.getDescription(), request.getBaseDailyRate());
+
+        return CampingItemResponse.from(entity);
+    }
+}
+```
+
+모든 메서드에서 `CampingItemResponse.from(entity)`로 일관되게 변환한다.
+
+#### Stream API와 조합
+
+```java
+// 메서드 참조로 간결하게 변환
+public List<CampingItemResponse> findAll() {
+    return repository.findAll().stream()
+        .map(CampingItemResponse::from)  // entity -> CampingItemResponse.from(entity)
+        .toList();
+}
+
+// 람다 표현식으로 작성 시
+public List<CampingItemResponse> findAll() {
+    return repository.findAll().stream()
+        .map(entity -> CampingItemResponse.from(entity))
+        .toList();
+}
+```
+
+`::from`은 메서드 참조로, `entity -> CampingItemResponse.from(entity)`와 동일하다.
+
+### Builder 패턴과의 비교
+
+#### Builder 패턴 (Request → Entity)
+
+```java
+// Request → Entity 변환
+CampingItem entity = CampingItem.builder()
+    .name(request.getName())
+    .category(request.getCategory())
+    .model(request.getModel())
+    .description(request.getDescription())
+    .stockQuantity(request.getStockQuantity())
+    .baseDailyRate(request.getBaseDailyRate())
+    .status(request.getStatus())
+    .build();
+```
+
+Builder는 여러 필드를 선택적으로 설정할 때 유용하다.
+
+#### Static Factory Method (Entity → Response)
+
+```java
+// Entity → Response 변환
+CampingItemResponse response = CampingItemResponse.from(entity);
+```
+
+Static Factory Method는 변환 로직을 캡슐화할 때 유용하다.
+
+### 주의사항
+
+#### NoArgsConstructor와 AllArgsConstructor 필요
+
+```java
+@Getter
+@NoArgsConstructor  // 필수: JPA, Jackson 등에서 사용
+@AllArgsConstructor // 필수: from() 메서드에서 사용
+public class CampingItemResponse {
+    private Long id;
+    private String name;
+    // ...
+
+    public static CampingItemResponse from(CampingItem entity) {
+        return new CampingItemResponse(  // AllArgsConstructor 사용
+            entity.getId(),
+            entity.getName(),
+            // ...
+        );
+    }
+}
+```
+
+`@AllArgsConstructor`가 없으면 Static Factory Method에서 생성자를 호출할 수 없다.
+
+`@NoArgsConstructor`는 JPA, Jackson(JSON 변환) 등에서 기본 생성자가 필요하기 때문에 함께 사용한다.
+
+### 핵심 정리
+
+#### Static Factory Method 정의
+객체 생성을 담당하는 정적 메서드로, 생성자 대신 의미 있는 이름으로 객체를 생성한다.
+
+#### 사용 목적
+- Entity → DTO 변환 로직 캡슐화
+- 가독성 향상 (`from()`, `of()` 등 의미 있는 이름)
+- 유지보수성 향상 (변환 로직이 한 곳에 집중)
+
+#### 실무 패턴
+- **Request → Entity**: Builder 패턴
+- **Entity → Response**: Static Factory Method
+
+#### 핵심 원칙
+> **"객체 변환 로직은 대상 클래스 안에 정적 메서드로 캡슐화한다"**
