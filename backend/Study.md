@@ -10,6 +10,7 @@
 - [Validation 어노테이션 (@NotNull vs @NotBlank)](#validation-어노테이션-notnull-vs-notblank)
 - [DTO (Data Transfer Object) 패턴](#dto-data-transfer-object-패턴)
 - [Static Factory Method 패턴](#static-factory-method-패턴)
+- [Controller 단위 테스트 (@WebMvcTest)](#controller-단위-테스트-webmvctest)
 ---
 
 ## @Builder 어노테이션 정리
@@ -148,17 +149,17 @@ private Machine machine;
 
 #### 의미
 - Rental을 조회할 때 Machine 정보는 나중에 필요할 때 가져옴
-- 성능 최적화!
+- 성능 최적화
 
 #### 예시
 
 **LAZY 로딩 (추천)**
 ```java
-// LAZY: Rental만 먼저 조회 (빠름!)
+// LAZY: Rental만 먼저 조회 (빠름)
 Rental rental = rentalRepository.findById(1L);
 
 // Machine이 필요할 때 그때 DB 조회
-String machineName = rental.getMachine().getName();  // 이때 DB 조회!
+String machineName = rental.getMachine().getName();  // 이때 DB 조회
 ```
 
 **EAGER 로딩 vs LAZY 로딩 비교**
@@ -168,7 +169,7 @@ String machineName = rental.getMachine().getName();  // 이때 DB 조회!
 private Machine machine;
 
 // LAZY: 필요할 때만 조회 (가벼움) 
-@ManyToOne(fetch = FetchType.LAZY)   // 추천!
+@ManyToOne(fetch = FetchType.LAZY)   // 추천
 private Machine machine;
 ```
 
@@ -178,7 +179,7 @@ private Machine machine;
 List rentals = rentalRepository.findAll();
 for (Rental rental : rentals) {
     System.out.println("대여 ID: " + rental.getId());
-    // Machine 정보는 조회하지 않음 → 빠른 성능!
+    // Machine 정보는 조회하지 않음 → 빠른 성능
 }
 
 // 특정 대여의 상세 정보 (Machine 정보 필요)
@@ -205,7 +206,7 @@ CREATE TABLE machine (
 -- rental 테이블 (자식 테이블)  
 CREATE TABLE rental (
     id BIGINT PRIMARY KEY,          -- 기본키
-    machine_id BIGINT,              -- 외래키 ← 여기가 핵심!
+    machine_id BIGINT,              -- 외래키 ← 여기가 핵심
     customer_id BIGINT,
     start_date DATE,
     end_date DATE,
@@ -236,19 +237,19 @@ VALUES (1, 100, 200, '2024-01-01');  -- machine_id = 100이 machine 테이블에
 INSERT INTO rental (id, machine_id, customer_id, start_date)
 VALUES (2, 999, 200, '2024-01-01');  -- machine_id = 999가 존재하지 않음
 
--- 결과: 외래키 제약 조건 위반 에러!
+-- 결과: 외래키 제약 조건 위반 에러
 -- ERROR: Foreign key constraint violation
 ```
 
 **2. 참조 무결성 유지**
 ```sql
--- 이런 상황을 방지!
+-- 이런 상황을 방지
 -- machine 테이블에서 기계 삭제 시도
 DELETE FROM machine WHERE id = 100;
 
 -- 하지만 rental 테이블에서 machine_id = 100인 대여 기록이 있으면?
 -- 외래키가 있으면: 삭제 불가 (참조 무결성 보장)
--- 외래키가 없으면: 삭제됨 (고아 레코드 발생!)
+-- 외래키가 없으면: 삭제됨 (고아 레코드 발생)
 ```
 
 #### 실제 동작 예시
@@ -268,7 +269,7 @@ rentalRepository.save(rental);
 // JPA가 실행하는 SQL:
 // INSERT INTO rental (id, machine_id, customer_id, start_date, end_date) 
 // VALUES (1, 100, 200, '2024-01-01', '2024-01-08');
-//            ↑ machine.getId() 값이 자동으로 들어감!
+//            ↑ machine.getId() 값이 자동으로 들어감
 ```
 
 ### 결론
@@ -297,7 +298,7 @@ rentalRepository.save(rental);
 // Entity
 public class Rental {
     public void approve() {
-        if (this.status != RentalStatus.PENDING) {
+        if (this.status = RentalStatus.PENDING) {
             throw new IllegalStateException("승인 대기 상태가 아닙니다");
         }
         this.status = RentalStatus.APPROVED;
@@ -327,8 +328,8 @@ public class RentalService {
     public void approveRental(Long rentalId) {
         Rental rental = rentalRepository.findById(rentalId);
         
-        // 모든 로직이 Service에!
-        if (rental.getStatus() != RentalStatus.PENDING) {
+        // 모든 로직이 Service에
+        if (rental.getStatus() = RentalStatus.PENDING) {
             throw new IllegalStateException("승인 대기 상태가 아닙니다");
         }
         rental.setStatus(RentalStatus.APPROVED);
@@ -356,9 +357,9 @@ public class RentalService {
 
 **1. 단일 Entity의 상태 변경**
 ```java
-// Entity에!
+// Entity에
 public void approve() {
-    if (this.status != RentalStatus.PENDING) {
+    if (this.status = RentalStatus.PENDING) {
         throw new IllegalStateException("승인 대기 상태가 아닙니다");
     }
     this.status = RentalStatus.APPROVED;
@@ -368,7 +369,7 @@ public void approve() {
 
 **2. 유효성 검증**
 ```java
-// Entity에!
+// Entity에
 public void extend(LocalDate newEndDate) {
     if (newEndDate.isBefore(this.endDate)) {
         throw new IllegalArgumentException("연장일은 기존 종료일보다 늦어야 합니다");
@@ -380,7 +381,7 @@ public void extend(LocalDate newEndDate) {
 
 **3. 계산 로직**
 ```java
-// Entity에!
+// Entity에
 public long getRentalDays() {
     return ChronoUnit.DAYS.between(startDate, endDate) + 1;
 }
@@ -390,7 +391,7 @@ public long getRentalDays() {
 
 **1. 여러 Entity를 조합**
 ```java
-//  Service에!
+//  Service에
 public void createRental(CreateRentalRequest request) {
     Machine machine = machineRepository.findById(request.getMachineId());
     Customer customer = customerRepository.findById(request.getCustomerId());
@@ -410,7 +411,7 @@ public void createRental(CreateRentalRequest request) {
 
 **2. 외부 서비스 호출**
 ```java
-// Service에!
+// Service에
 public void completeRental(Long rentalId) {
     Rental rental = rentalRepository.findById(rentalId);
     rental.complete(LocalDate.now());
@@ -425,7 +426,7 @@ public void completeRental(Long rentalId) {
 
 **3. 트랜잭션 관리**
 ```java
-// Service에!
+// Service에
 @Transactional
 public void cancelRentalAndRefund(Long rentalId) {
     Rental rental = rentalRepository.findById(rentalId);
@@ -475,7 +476,7 @@ public class RentalService {
 
 ### 이론적 배경
 
-이것이 바로 DDD(Domain-Driven Design, 도메인 주도 설계)의 핵심 개념입니다!
+이것이 바로 DDD(Domain-Driven Design, 도메인 주도 설계)의 핵심 개념입니다
 
 - **Martin Fowler**: "Rich Domain Model을 권장"
 - **Spring 공식**: 두 가지 모두 지원하지만 Rich Model 선호
@@ -552,7 +553,7 @@ private Integer stockQuantity;
 private BigDecimal baseDailyRate;
 
 // 잘못된 예시
-@NotBlank  // Enum이나 숫자에는 사용 불가! (컴파일 에러)
+@NotBlank  // Enum이나 숫자에는 사용 불가 (컴파일 에러)
 private CampingCategory category;
 ```
 
@@ -636,7 +637,7 @@ HTTP 400 Bad Request
 
 #### Q: "4인용 텐트"는 공백이 있는데 @NotBlank로 통과되나요?
 
-**A: 통과됩니다!**
+**A: 통과됩니다**
 
 ```java
 @NotBlank
@@ -706,13 +707,13 @@ public User getUser(Long id) {
     return userRepository.findById(id);
 }
 
-// 응답에 password가 그대로 노출!
+// 응답에 password가 그대로 노출
 {
   "id": 1,
   "name": "홍길동",
   "email": "hong@example.com",
-  "password": "hashed_password_12345",  // 보안 위험!
-  "internalNote": "VIP 고객"             // 내부 정보 노출!
+  "password": "hashed_password_12345",  // 보안 위험
+  "internalNote": "VIP 고객"             // 내부 정보 노출
 }
 ```
 
@@ -731,7 +732,7 @@ public class CampingRental {
 }
 
 // Entity를 직접 반환하면
-// CampingItem → rentals → CampingItem → rentals → ... (무한 루프!)
+// CampingItem → rentals → CampingItem → rentals → ... (무한 루프)
 ```
 
 **3. 불필요한 필드 노출**
@@ -753,7 +754,7 @@ public class CampingRental {
 **1. CreateRequest - 생성 요청**
 ```java
 public class CampingItemCreateRequest {
-    // id 없음! (DB가 자동 생성)
+    // id 없음 (DB가 자동 생성)
 
     @NotBlank
     private String name;
@@ -764,7 +765,7 @@ public class CampingItemCreateRequest {
     @NotNull
     private Integer stockQuantity;
 
-    // createdAt, updatedAt 없음! (서버가 자동 생성)
+    // createdAt, updatedAt 없음 (서버가 자동 생성)
 }
 ```
 
@@ -792,9 +793,9 @@ public class CampingItemUpdateRequest {
     @NotNull
     private BigDecimal baseDailyRate;
 
-    // category 없음! (생성 후 카테고리 변경 불가)
-    // stockQuantity 없음! (별도 API로 관리)
-    // status 없음! (별도 API로 관리)
+    // category 없음 (생성 후 카테고리 변경 불가)
+    // stockQuantity 없음 (별도 API로 관리)
+    // status 없음 (별도 API로 관리)
 }
 ```
 
@@ -821,7 +822,7 @@ public class StatusUpdateRequest {
 
 ```java
 public class CampingItemResponse {
-    // id 포함! (클라이언트가 알아야 함)
+    // id 포함 (클라이언트가 알아야 함)
     private Long id;
 
     private String name;
@@ -832,11 +833,11 @@ public class CampingItemResponse {
     private BigDecimal baseDailyRate;
     private CampingItemStatus status;
 
-    // createdAt, updatedAt 포함! (조회 결과에 필요)
+    // createdAt, updatedAt 포함 (조회 결과에 필요)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    // validation 어노테이션 없음!
+    // validation 어노테이션 없음
     // (서버가 보내는 데이터라 검증 불필요)
 }
 ```
@@ -880,7 +881,7 @@ public CampingItemResponse findById(Long id) {
     CampingItem entity = repository.findById(id)
         .orElseThrow(() -> new EntityNotFoundException("장비를 찾을 수 없습니다"));
 
-    return CampingItemResponse.from(entity);  // 간단한 변환!
+    return CampingItemResponse.from(entity);  // 간단한 변환
 }
 ```
 
@@ -1360,3 +1361,485 @@ public class CampingItemResponse {
 
 #### 핵심 원칙
 > **"객체 변환 로직은 대상 클래스 안에 정적 메서드로 캡슐화한다"**
+
+---
+
+## Controller 단위 테스트 (@WebMvcTest)
+
+### 기본 개념
+
+**Controller 단위 테스트란?**
+> Controller 계층만 독립적으로 테스트하는 방식. Service 계층은 Mock으로 대체하여 Controller의 역할만 검증한다.
+
+### 핵심 질문: "Service가 가짜인데 테스트 의미가 있어?"
+
+**답: 있다**
+
+Controller 테스트는 **비즈니스 로직을 테스트하는 게 아니다.**
+
+#### Controller 테스트가 검증하는 것
+
+**1. HTTP 라우팅**
+```java
+// 잘못된 경로 설정 감지
+@PostMapping("/create")  // 오타
+public ResponseEntity<CampingItemResponse> create(...) { ... }
+
+// 테스트 실패: 404 Not Found
+// 올바른 경로: POST /api/camping-items
+```
+
+**2. 요청 파싱 (JSON → DTO)**
+```java
+// JSON 요청
+{
+  "name": "4인용 텐트",
+  "category": "TENT",
+  "stockQuantity": 10
+}
+
+// Controller가 CampingItemCreateRequest로 제대로 변환하는가?
+```
+
+**3. Validation 동작**
+```java
+@PostMapping("/api/camping-items")
+public ResponseEntity<CampingItemResponse> create(
+    @Valid @RequestBody CampingItemCreateRequest request) {  // @Valid 체크
+    // ...
+}
+
+// @Valid를 빼먹으면?
+// 잘못된 데이터도 통과 (테스트로 감지)
+```
+
+**4. 응답 생성 (DTO → JSON)**
+```java
+// Response 객체가 JSON으로 올바르게 변환되는가?
+// 상태코드가 201 Created인가? 200 OK가 아니라?
+```
+
+**5. 에러 처리**
+```java
+// name이 공백이면 400 Bad Request를 반환하는가?
+// Validation 실패 시 적절한 에러 메시지를 주는가?
+```
+
+### @WebMvcTest vs @SpringBootTest
+
+#### 비교표
+
+| 항목 | @WebMvcTest | @SpringBootTest |
+|------|-------------|-----------------|
+| 로드 범위 | Controller만 | 전체 애플리케이션 |
+| Service | Mock으로 대체 | 실제 Service |
+| DB | 연결 안 함 | 실제 연결 |
+| 속도 | 빠름 (1~2초) | 느림 (5~10초) |
+| 목적 | Controller 단위 테스트 | 통합 테스트 |
+| 사용 시기 | Controller 로직 검증 | 전체 흐름 검증 |
+
+#### @WebMvcTest (단위 테스트)
+
+```java
+@WebMvcTest(CampingItemController.class)  // Controller만 로드
+@AutoConfigureMockMvc(addFilters = false)  // Security 비활성화
+class CampingItemControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;  // HTTP 요청/응답 시뮬레이션
+
+    @MockitoBean  // Service를 Mock으로 대체
+    private CampingItemService campingItemService;
+
+    // Controller만 테스트
+}
+```
+
+**특징:**
+- Controller만 로드 (빠름)
+- Service는 가짜 객체 (Mock)
+- DB 연결 없음
+- HTTP 요청/응답만 검증
+
+**장점:**
+- 빠른 실행 속도
+- Controller 로직만 집중 테스트
+- 외부 의존성 없음
+
+**단점:**
+- Service 로직은 테스트 안 됨
+- DB 연동은 테스트 안 됨
+
+#### @SpringBootTest (통합 테스트)
+
+```java
+@SpringBootTest  // 전체 애플리케이션 로드
+@AutoConfigureMockMvc
+class CampingItemIntegrationTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    // 실제 Service, Repository, DB 사용
+    // Service는 Mock이 아님
+}
+```
+
+**특징:**
+- 전체 애플리케이션 로드 (느림)
+- 실제 Service, Repository 사용
+- DB 실제 연결
+- 전체 흐름 검증
+
+**장점:**
+- 실제 동작 검증
+- 통합 시나리오 테스트
+
+**단점:**
+- 느린 실행 속도
+- 테스트 격리 어려움
+
+### Given-When-Then 패턴
+
+테스트 코드를 구조화하는 표준 패턴
+
+#### 구조
+
+```java
+@Test
+@DisplayName("캠핑 장비 생성 성공")
+void create_Success() throws Exception {
+    // Given: 테스트 데이터 준비
+    CampingItemCreateRequest request = new CampingItemCreateRequest(
+        "4인용 텐트", CampingCategory.TENT, "MSR", "가족용",
+        10, new BigDecimal("50000"), CampingItemStatus.AVAILABLE
+    );
+
+    CampingItemResponse response = new CampingItemResponse(
+        1L, "4인용 텐트", CampingCategory.TENT, "MSR", "가족용",
+        10, new BigDecimal("50000"), CampingItemStatus.AVAILABLE,
+        LocalDateTime.now(), LocalDateTime.now()
+    );
+
+    // Mock 설정: Service 호출 시 response 반환
+    given(campingItemService.create(any(CampingItemCreateRequest.class)))
+        .willReturn(response);
+
+    // When: 실제 동작 실행
+    mockMvc.perform(post("/api/camping-items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+
+        // Then: 결과 검증
+        .andExpect(status().isCreated())  // 201 상태코드
+        .andExpect(jsonPath("$.id").value(1))
+        .andExpect(jsonPath("$.name").value("4인용 텐트"))
+        .andExpect(jsonPath("$.category").value("TENT"))
+        .andExpect(jsonPath("$.stockQuantity").value(10));
+}
+```
+
+#### 각 단계의 역할
+
+**Given (준비)**
+- 테스트에 필요한 데이터 생성
+- Mock 객체 동작 정의
+- `given().willReturn()` 사용
+
+**When (실행)**
+- 실제 테스트할 동작 실행
+- `mockMvc.perform()` 사용
+- HTTP 요청 시뮬레이션
+
+**Then (검증)**
+- 결과가 예상과 일치하는지 검증
+- `.andExpect()` 사용
+- 상태코드, 응답 데이터 검증
+
+### MockMvc 주요 메서드
+
+#### 요청 생성
+
+```java
+// POST 요청
+mockMvc.perform(post("/api/camping-items")
+    .contentType(MediaType.APPLICATION_JSON)
+    .content(objectMapper.writeValueAsString(request)))
+
+// GET 요청
+mockMvc.perform(get("/api/camping-items/{id}", 1L))
+
+// PUT 요청
+mockMvc.perform(put("/api/camping-items/{id}", 1L)
+    .contentType(MediaType.APPLICATION_JSON)
+    .content(objectMapper.writeValueAsString(updateRequest)))
+```
+
+#### 응답 검증
+
+```java
+// 상태코드 검증
+.andExpect(status().isOk())          // 200
+.andExpect(status().isCreated())     // 201
+.andExpect(status().isBadRequest())  // 400
+.andExpect(status().isNotFound())    // 404
+
+// JSON 경로로 검증
+.andExpect(jsonPath("$.id").value(1))
+.andExpect(jsonPath("$.name").value("4인용 텐트"))
+.andExpect(jsonPath("$.category").value("TENT"))
+
+// 배열 검증
+.andExpect(jsonPath("$.length()").value(2))  // 배열 크기
+.andExpect(jsonPath("$[0].name").value("텐트"))  // 첫 번째 요소
+.andExpect(jsonPath("$[1].name").value("침낭"))  // 두 번째 요소
+```
+
+### @MockitoBean (Spring Boot 3.4+)
+
+#### 변경 사항
+
+```java
+// 구버전 (deprecated)
+import org.springframework.boot.test.mock.mockito.MockBean;
+@MockBean
+private CampingItemService campingItemService;
+
+// 신버전 (권장)
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+@MockitoBean
+private CampingItemService campingItemService;
+```
+
+**차이점:**
+- 기능은 완전히 동일
+- 패키지 경로만 변경됨
+- Spring Boot 3.4부터 새로운 API 도입
+
+#### Mock 동작 정의
+
+```java
+// any(): 아무 값이나 매칭
+given(campingItemService.create(any(CampingItemCreateRequest.class)))
+    .willReturn(response);
+
+// eq(): 특정 값과 정확히 매칭
+given(campingItemService.findById(eq(1L)))
+    .willReturn(response);
+
+// anyLong(), anyString() 등도 사용 가능
+given(campingItemService.findById(anyLong()))
+    .willReturn(response);
+```
+
+### 실제 테스트 예시
+
+#### 성공 케이스 테스트
+
+```java
+@Test
+@DisplayName("캠핑 장비 생성 성공")
+void create_Success() throws Exception {
+    // Given
+    CampingItemCreateRequest request = new CampingItemCreateRequest(
+        "4인용 텐트", CampingCategory.TENT, "MSR", "가족용 텐트",
+        10, new BigDecimal("50000"), CampingItemStatus.AVAILABLE
+    );
+
+    CampingItemResponse response = new CampingItemResponse(
+        1L, "4인용 텐트", CampingCategory.TENT, "MSR", "가족용 텐트",
+        10, new BigDecimal("50000"), CampingItemStatus.AVAILABLE,
+        LocalDateTime.now(), LocalDateTime.now()
+    );
+
+    given(campingItemService.create(any(CampingItemCreateRequest.class)))
+        .willReturn(response);
+
+    // When & Then
+    mockMvc.perform(post("/api/camping-items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.id").value(1))
+        .andExpect(jsonPath("$.name").value("4인용 텐트"));
+}
+```
+
+#### Validation 실패 테스트
+
+```java
+@Test
+@DisplayName("이름이 공백이면 생성 실패")
+void create_ValidationFail_WhenNameIsBlank() throws Exception {
+    // Given: 잘못된 요청 (name이 공백)
+    CampingItemCreateRequest request = new CampingItemCreateRequest(
+        "   ",  // 공백만
+        CampingCategory.TENT, "MSR", "가족용 텐트",
+        10, new BigDecimal("50000"), CampingItemStatus.AVAILABLE
+    );
+
+    // When & Then
+    mockMvc.perform(post("/api/camping-items")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());  // 400 에러
+}
+```
+
+#### 목록 조회 테스트
+
+```java
+@Test
+@DisplayName("캠핑 장비 전체 조회 성공")
+void findAll_Success() throws Exception {
+    // Given
+    CampingItemResponse response1 = new CampingItemResponse(
+        1L, "4인용 텐트", CampingCategory.TENT, "MSR", "가족용",
+        10, new BigDecimal("50000"), CampingItemStatus.AVAILABLE,
+        LocalDateTime.now(), LocalDateTime.now()
+    );
+
+    CampingItemResponse response2 = new CampingItemResponse(
+        2L, "침낭", CampingCategory.SLEEPING_BAG, "Model-B", "겨울용",
+        5, new BigDecimal("30000"), CampingItemStatus.AVAILABLE,
+        LocalDateTime.now(), LocalDateTime.now()
+    );
+
+    given(campingItemService.findAll())
+        .willReturn(List.of(response1, response2));
+
+    // When & Then
+    mockMvc.perform(get("/api/camping-items"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].name").value("4인용 텐트"))
+        .andExpect(jsonPath("$[1].name").value("침낭"));
+}
+```
+
+### 테스트 설정
+
+#### build.gradle
+
+```gradle
+tasks.named('test') {
+    useJUnitPlatform()
+    testLogging {
+        events "passed", "skipped", "failed"
+    }
+}
+```
+
+**효과:**
+- 터미널에서 테스트 결과 실시간 확인
+- PASSED/FAILED 상태 출력
+
+#### Security 비활성화
+
+```java
+@WebMvcTest(CampingItemController.class)
+@AutoConfigureMockMvc(addFilters = false)  // Security 필터 비활성화
+class CampingItemControllerTest {
+    // Spring Security가 있어도 인증 없이 테스트 가능
+}
+```
+
+**이유:**
+- Controller 테스트는 인증/인가 검증이 목적이 아님
+- Security 테스트는 별도로 작성
+- 단순한 Controller 로직만 테스트
+
+### 트러블슈팅
+
+#### 문제 1: Spring Boot 4.0.0 테스트 의존성 문제
+
+**증상:**
+```
+error: package org.springframework.boot.test.mock.mockito does not exist
+error: package com.fasterxml.jackson.databind does not exist
+```
+
+**원인:**
+- Spring Boot 4.0.0은 불안정 (테스트 인프라 변경)
+- Jackson 3.0으로 업그레이드 (패키지 경로 변경)
+
+**해결:**
+```gradle
+// build.gradle
+plugins {
+    id 'org.springframework.boot' version '3.4.1'  // 4.0.0 → 3.4.1
+}
+```
+
+#### 문제 2: 403 Forbidden 에러
+
+**증상:**
+```
+Status expected:<201> but was:<403>
+```
+
+**원인:**
+- Spring Security가 활성화되어 모든 요청 인증 요구
+
+**해결:**
+```java
+@WebMvcTest(CampingItemController.class)
+@AutoConfigureMockMvc(addFilters = false)  // 추가
+class CampingItemControllerTest { ... }
+```
+
+#### 문제 3: @MockBean deprecated 경고
+
+**증상:**
+```
+warning: [removal] MockBean has been deprecated and marked for removal
+```
+
+**해결:**
+```java
+// 변경 전
+import org.springframework.boot.test.mock.mockito.MockBean;
+@MockBean
+
+// 변경 후
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+@MockitoBean
+```
+
+### 테스트 전략
+
+#### 무엇을 테스트할까?
+
+**Controller 테스트로 검증:**
+- HTTP 라우팅 (`/api/camping-items`)
+- 요청/응답 직렬화 (JSON ↔ DTO)
+- Validation (`@Valid`)
+- 상태코드 (201, 200, 400 등)
+- 에러 처리
+
+**Service 테스트로 검증:**
+- 비즈니스 로직
+- 데이터 변환
+- 예외 처리
+- 트랜잭션
+
+**통합 테스트로 검증:**
+- Controller → Service → Repository 전체 흐름
+- DB 연동
+- 실제 시나리오
+
+### 핵심 정리
+
+#### Controller 단위 테스트의 목적
+> **"Controller는 HTTP 요청을 받아 Service에 전달하고, 결과를 HTTP 응답으로 변환하는 역할을 제대로 하는가?"**
+
+#### 테스트 계층별 역할
+
+| 계층 | 테스트 대상 | Mock 사용 | 속도 |
+|------|------------|----------|------|
+| Controller 테스트 | 라우팅, 직렬화, Validation | Service Mock | 빠름 |
+| Service 테스트 | 비즈니스 로직 | Repository Mock | 빠름 |
+| 통합 테스트 | 전체 흐름 | Mock 없음 | 느림 |
+
+#### 핵심 원칙
+> **"각 계층은 자신의 책임만 테스트한다. Controller는 비즈니스 로직을 테스트하지 않는다."**
