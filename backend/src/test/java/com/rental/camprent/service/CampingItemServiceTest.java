@@ -9,6 +9,7 @@ import com.rental.camprent.dto.request.CampingItemUpdateRequest;
 import com.rental.camprent.dto.request.StatusUpdateRequest;
 import com.rental.camprent.dto.request.StockUpdateRequest;
 import com.rental.camprent.dto.response.CampingItemResponse;
+import com.rental.camprent.exception.ItemNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,7 +76,7 @@ class CampingItemServiceTest {
                 .willReturn(Optional.empty());
 
         // When & Then: 예외 발생 검증
-        assertThrows(IllegalArgumentException.class, () -> {
+        assertThrows(ItemNotFoundException.class, () -> {
             campingItemService.findById(nonExistentId);
         });
     }

@@ -7,6 +7,7 @@ import com.rental.camprent.dto.request.CampingItemUpdateRequest;
 import com.rental.camprent.dto.request.StatusUpdateRequest;
 import com.rental.camprent.dto.request.StockUpdateRequest;
 import com.rental.camprent.dto.response.CampingItemResponse;
+import com.rental.camprent.exception.ItemNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class CampingItemService {
 
     public CampingItemResponse findById(Long id) {
         CampingItem entity = campingItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException("장비를 찾을 수 없습니다. id: " + id));
 
         return CampingItemResponse.from(entity);
     }
@@ -55,7 +56,7 @@ public class CampingItemService {
     @Transactional
     public CampingItemResponse update(Long id, CampingItemUpdateRequest request) {
         CampingItem entity = campingItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException("장비를 찾을 수 없습니다. id: " + id));
 
         // 정보 수정
         entity.updateInfo(request.getName(), request.getModel(), request.getDescription(), request.getBaseDailyRate());
@@ -66,7 +67,7 @@ public class CampingItemService {
     @Transactional
     public CampingItemResponse increaseStock(Long id, StockUpdateRequest request) {
         CampingItem entity = campingItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException("장비를 찾을 수 없습니다. id: " + id));
 
         entity.increaseStock(request.getQuantity());
 
@@ -76,7 +77,7 @@ public class CampingItemService {
     @Transactional
     public CampingItemResponse decreaseStock(Long id, StockUpdateRequest request) {
         CampingItem entity = campingItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException("장비를 찾을 수 없습니다. id: " + id));
 
         entity.decreaseStock(request.getQuantity());
 
@@ -86,7 +87,7 @@ public class CampingItemService {
     @Transactional
     public CampingItemResponse updateStatus(Long id, StatusUpdateRequest request) {
         CampingItem entity = campingItemRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("장비를 찾을 수 없습니다. id: " + id));
+                .orElseThrow(() -> new ItemNotFoundException("장비를 찾을 수 없습니다. id: " + id));
 
         entity.updateStatus(request.getStatus());
 
