@@ -5,6 +5,9 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +18,7 @@ import java.time.LocalDateTime;
 @Table(name = "users")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EntityListeners(AuditingEntityListener.class)
 public class User {
 
     @Id
@@ -27,11 +31,14 @@ public class User {
     @Column(nullable = false)
     private String password;                            // 비밀번호(암호화)
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false, length = 50)
     private String name;                                // 실명
 
-    @Column(length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String email;                               // 이메일
+
+    @Column(length =20)
+    private String phone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -40,35 +47,39 @@ public class User {
     @Column(nullable = false)
     private boolean enabled;                            // 계정 활성화 여부
 
+    @CreatedDate
     @Column(updatable = false)
     private LocalDateTime createdAt;                    // 가입일시
 
+    @LastModifiedDate
+    @Column(nullable = false)
     private LocalDateTime updatedAt;                    // 수정일시
 
     private LocalDateTime lastLoginAt;                  // 마지막 로그인 시간
 
     @Builder
-    public User(String username, String password, String name, String email, UserRole role) {
+    public User(String username, String password, String name,
+                String email, String phone, UserRole role) {
         this.username = username;
         this.password = password;
         this.name = name;
         this.email = email;
+        this.phone = phone;
         this.role = role;
         this.enabled = true;      // 기본값: 활성화
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
     }
 
     // 비즈니스 메서드
-    public void updateInfo(String name, String email) {
+    // 개인정보 수정 메서드
+    public void updateInfo(String name, String email, String phone) {
         this.name = name;
         this.email = email;
-        this.updatedAt = LocalDateTime.now();
+        this.phone = phone;
     }
 
+    // 비밀번호 변경 메서드 (암호화된 비밀번호로 변경)
     public void changePassword(String newPassword) {
         this.password = newPassword;
-        this.updatedAt = LocalDateTime.now();
     }
 
     public void updateLastLogin() {
@@ -77,12 +88,10 @@ public class User {
 
     public void disable() {
         this.enabled = false;
-        this.updatedAt = LocalDateTime.now();
     }
 
     public void enable() {
         this.enabled = true;
-        this.updatedAt = LocalDateTime.now();
     }
 
 }
