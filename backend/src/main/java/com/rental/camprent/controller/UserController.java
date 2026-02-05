@@ -1,5 +1,6 @@
 package com.rental.camprent.controller;
 
+import com.rental.camprent.dto.request.LoginRequest;
 import com.rental.camprent.dto.request.UserSignupRequest;
 import com.rental.camprent.dto.response.UserResponse;
 import com.rental.camprent.service.UserService;
@@ -7,10 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,5 +21,12 @@ public class UserController {
     public ResponseEntity<UserResponse> signup(@Valid @RequestBody UserSignupRequest request) {
         UserResponse response = userService.signup(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+        UserResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
+        // 이거 두개 차이 뭐야?
     }
 }

@@ -3,10 +3,11 @@ package com.rental.camprent.service;
 import com.rental.camprent.domain.user.User;
 import com.rental.camprent.domain.user.UserRepository;
 import com.rental.camprent.domain.user.UserRole;
+import com.rental.camprent.dto.request.LoginRequest;
 import com.rental.camprent.dto.request.UserSignupRequest;
 import com.rental.camprent.dto.response.UserResponse;
+import com.rental.camprent.exception.ItemNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,5 +50,23 @@ public class UserService {
 
         // Entity -> DTO 변환하여 반환
         return UserResponse.from(savedUser);
+    }
+
+    @Transactional
+    public UserResponse login(LoginRequest request) {
+        // username으로 사용자 찾기
+        User user = userRepository.findByUsername(request.username())
+                .orElseThrow(()-> new ItemNotFoundException("존재하지 않는 사용자입니다."));
+
+        // 비밀번호 검증
+        if(!passwordEncoder.matches(request.password(), user.getPassword())) {
+            throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // 마지막 로그인 시간 업데이트
+        user.updateLastLogin();
+
+        // 사용자 정보 반환
+        return UserResponse.from(user);
     }
 }

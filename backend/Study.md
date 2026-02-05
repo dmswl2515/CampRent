@@ -11,6 +11,7 @@
 - [DTO (Data Transfer Object) 패턴](#dto-data-transfer-object-패턴)
 - [Static Factory Method 패턴](#static-factory-method-패턴)
 - [Controller 단위 테스트 (@WebMvcTest)](#controller-단위-테스트-webmvctest)
+- [트러블슈팅](#트러블슈팅)
 ---
 
 ## @Builder 어노테이션 정리
@@ -1843,3 +1844,54 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 #### 핵심 원칙
 > **"각 계층은 자신의 책임만 테스트한다. Controller는 비즈니스 로직을 테스트하지 않는다."**
+
+---
+
+## 트러블슈팅
+
+### @WebMvcTest와 JPA Auditing 충돌
+
+**문제**
+- User 엔티티 추가 후 CampingItemControllerTest 실패
+- 에러: `JPA metamodel must not be empty`
+
+**원인**
+- @EnableJpaAuditing이 Entity 스캔 시도
+- @WebMvcTest는 Entity를 로드하지 않음
+- Entity가 없는 상태에서 JPA Auditing 활성화 불가
+
+**해결**
+
+1. JPA Auditing 설정 분리
+```java
+// JpaAuditingConfiguration.java 생성
+@Configuration
+@EnableJpaAuditing
+public class JpaAuditingConfiguration {
+}
+```
+
+2. CampRentApplication에서 @EnableJpaAuditing 제거
+```java
+@SpringBootApplication  // @EnableJpaAuditing 제거
+public class CampRentApplication {
+}
+```
+
+3. @WebMvcTest에서 JPA Auditing 설정 제외
+```java
+@WebMvcTest(
+    value = CampingItemController.class,
+    excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = JpaAuditingConfiguration.class
+    )
+)
+class CampingItemControllerTest {
+}
+```
+
+**참고**
+- @WebMvcTest: 웹 계층만 테스트 (Controller, ControllerAdvice)
+- JPA Auditing: @CreatedDate, @LastModifiedDate 자동 관리
+- 실제 서버 실행 시: 모든 설정 로드되어 JPA Auditing 정상 작동

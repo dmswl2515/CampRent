@@ -82,6 +82,7 @@ public class User {
         this.password = newPassword;
     }
 
+    // 마지막 로그인 시간 업데이트
     public void updateLastLogin() {
         this.lastLoginAt = LocalDateTime.now();
     }
