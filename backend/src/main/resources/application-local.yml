@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/camprent_local
+    username: postgres
+    password: postgres
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+jwt:
+  secret: VTmZ7rzeP5gRVgTLv4u2HC7Ge1+Ou3ZljTDUvBLhUZA=
+  expiration: 3600000  # 1시간
+
+logging:
+  level:
+    com.rental.camprent: DEBUG
