@@ -2,6 +2,7 @@ package com.rental.camprent.controller;
 
 import com.rental.camprent.dto.request.LoginRequest;
 import com.rental.camprent.dto.request.UserSignupRequest;
+import com.rental.camprent.dto.response.LoginResponse;
 import com.rental.camprent.dto.response.UserResponse;
 import com.rental.camprent.service.UserService;
 import jakarta.validation.Valid;
@@ -24,9 +25,8 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
-        UserResponse response = userService.login(request);
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        LoginResponse response = userService.login(request);
         return ResponseEntity.ok(response);
-        // 이거 두개 차이 뭐야?
     }
 }

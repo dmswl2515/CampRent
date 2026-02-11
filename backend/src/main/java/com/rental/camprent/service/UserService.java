@@ -5,8 +5,10 @@ import com.rental.camprent.domain.user.UserRepository;
 import com.rental.camprent.domain.user.UserRole;
 import com.rental.camprent.dto.request.LoginRequest;
 import com.rental.camprent.dto.request.UserSignupRequest;
+import com.rental.camprent.dto.response.LoginResponse;
 import com.rental.camprent.dto.response.UserResponse;
 import com.rental.camprent.exception.ItemNotFoundException;
+import com.rental.camprent.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     @Transactional
     public UserResponse signup(UserSignupRequest request) {
@@ -53,7 +56,7 @@ public class UserService {
     }
 
     @Transactional
-    public UserResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
         // username으로 사용자 찾기
         User user = userRepository.findByUsername(request.username())
                 .orElseThrow(()-> new ItemNotFoundException("존재하지 않는 사용자입니다."));
@@ -66,7 +69,16 @@ public class UserService {
         // 마지막 로그인 시간 업데이트
         user.updateLastLogin();
 
+        // JWT 토큰 생성
+        String token = jwtUtil.generateToken(
+                user.getUsername(),
+                user.getRole().name() // 왜 여기서 name은 getName안해?
+        );
+
+        // 사용자 정보 DTO 변환
+        UserResponse userResponse = UserResponse.from(user);
+
         // 사용자 정보 반환
-        return UserResponse.from(user);
+        return LoginResponse.of(token, userResponse);
     }
 }
