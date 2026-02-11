@@ -6,11 +6,17 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate  # 실무 표준: Hibernate가 스키마 수정 안 함
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: false  # 빈 DB에서 시작 (V1부터 차례대로 실행)
+    locations: classpath:db/migration
+    validate-on-migrate: true
 
 jwt:
   secret: VTmZ7rzeP5gRVgTLv4u2HC7Ge1+Ou3ZljTDUvBLhUZA=
