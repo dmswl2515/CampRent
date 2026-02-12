@@ -1,6 +1,8 @@
 package com.rental.camprent.controller;
 
 import com.rental.camprent.config.JpaAuditingConfiguration;
+import com.rental.camprent.config.SecurityConfig;
+import com.rental.camprent.security.JwtAuthenticationFilter;
 import com.rental.camprent.domain.campingitem.CampingCategory;
 import com.rental.camprent.domain.campingitem.CampingItemStatus;
 import com.rental.camprent.dto.request.CampingItemCreateRequest;
@@ -18,6 +20,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -33,7 +36,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(
     value = CampingItemController.class,
-    excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JpaAuditingConfiguration.class)
+    excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JpaAuditingConfiguration.class),
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = SecurityConfig.class),
+        @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, classes = JwtAuthenticationFilter.class)
+    }
 )
 @AutoConfigureMockMvc(addFilters = false)  // Security 필터 비활성화
 class CampingItemControllerTest {
