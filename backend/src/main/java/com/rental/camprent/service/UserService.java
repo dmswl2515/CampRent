@@ -81,4 +81,17 @@ public class UserService {
         // 사용자 정보 반환
         return LoginResponse.of(token, userResponse);
     }
+
+    /**
+     * 현재 로그인한 사용자 정보 조회
+     *
+     * @param username 사용자 아이디 (JWT 토큰에서 추출됨)
+     * @return 사용자 정보 DTO
+     * */
+    public UserResponse getCurrentUser(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ItemNotFoundException("존재하지 않는 사용자입니다."));
+
+        return UserResponse.from(user);
+    }
 }
