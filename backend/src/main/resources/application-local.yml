@@ -25,6 +25,15 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
 
+# Swagger (로컬 개발 환경에서 활성화)
+springdoc:
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+
 logging:
   level:
     com.rental.camprent: DEBUG

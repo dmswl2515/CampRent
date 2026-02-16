@@ -29,6 +29,13 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/api/auth/**").permitAll()
+                    // 인증 API
+                    .requestMatchers(
+                "/swagger-ui/**",   // Swagger UI
+                          "/v3/api-docs/**",  // OpenAPI 3.0 문서
+                          "/swagger-resources/**",  // Swager 리소스
+                          "/swagger-ui.html"  // Swageer UI 메인
+                    ).permitAll()
                     .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter,
