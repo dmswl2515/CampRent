@@ -1,7 +1,10 @@
 package com.rental.camprent.config;
 
 import com.rental.camprent.security.JwtAuthenticationFilter;
+import com.rental.camprent.security.RateLimitFilter;
+import jakarta.servlet.FilterRegistration;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -19,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RateLimitFilter rateLimitFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -38,10 +42,19 @@ public class SecurityConfig {
                     ).permitAll()
                     .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthenticationFilter,
-                    UsernamePasswordAuthenticationFilter.class);
-
+            // JwtAuthenticationFilter 먼저 등록 (위치가 Spring Security에 알려짐)
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+            //RateLimitFilter를 JwtAuthenticationFilter 앞에 등록
+            .addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
         return http.build();
+    }
+
+    // rateLimitFilter 서블릿 자동 등록 방지(SecurityFilterChain에서만 작동하도록)
+    @Bean
+    public FilterRegistrationBean<RateLimitFilter> rateLimitFilterRegistration(RateLimitFilter rateLimitFilter) {
+        FilterRegistrationBean<RateLimitFilter> registration = new FilterRegistrationBean<>(rateLimitFilter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
