@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// user랑 customer랑 뭔차이일까? user는 관리자도 포함이라서 분리한건가?
 @Tag(name = "고객", description = "고객 관리 API")
 @RestController
 @RequestMapping("/api/customers")
@@ -32,12 +31,16 @@ public class CustomerController {
             @ApiResponse(responseCode = "200", description = "조회 성공")
     })
     @GetMapping
-    public ResponseEntity<List<CustomerResponse>> findAll(@Parameter(description = "고객 유형 필터(INDIVIDUAL, BUSINESS")
-                                                          @RequestParam(required = false) CustomerType type) {
+    public ResponseEntity<List<CustomerResponse>> findAll(
+            @Parameter(description = "고객 유형 필터(INDIVIDUAL, BUSINESS)")
+            @RequestParam(required = false) CustomerType type
+    ) {
         if (type != null) {
-            return ResponseEntity.ok(customerService.findByType(type));
+            List<CustomerResponse> responses = customerService.findByType(type);
+            return ResponseEntity.ok(responses);
         }
-        return ResponseEntity.ok(customerService.findAll());
+        List<CustomerResponse> responses = customerService.findAll();
+        return ResponseEntity.ok(responses);
     }
 
     @Operation(summary = "고객 상세 조회", description= "ID로 고객 정보를 조회합니다.")
@@ -46,20 +49,27 @@ public class CustomerController {
             @ApiResponse(responseCode = "404", description = "존재하지 않는 고객")
     })
     @GetMapping("/{id}")
-    public ResponseEntity<CustomerResponse> findById(@Parameter(description = "고객 ID")
-                                                     @PathVariable Long id) {
-        return ResponseEntity.ok(customerService.findById(id));
+    public ResponseEntity<CustomerResponse> findById(
+            @Parameter(description = "고객 ID") @PathVariable Long id
+    ) {
+        CustomerResponse response = customerService.findById(id);
+        return ResponseEntity.ok(response);
     }
 
-    @Operation(summary = "고객 등록", description = "새로운 고객을 등록합니다. 기업 고객의 경우 사업자등록번호가 필수입니다.")
+    @Operation(
+            summary = "고객 등록",
+            description = "새로운 고객을 등록합니다. " +
+                          "현재는 개인 고객(INDIVIDUAL) 위주로 운영되며, " +
+                          "기업 고객(BUSINESS) 기능은 향후 확장 예정입니다."
+    )
     @ApiResponses({
             @ApiResponse(responseCode = "201", description = "등록 성공"),
             @ApiResponse(responseCode = "400", description = "유효성 검증 실패")
     })
     @PostMapping
     public ResponseEntity<CustomerResponse> create(@Valid @RequestBody CustomerCreateRequest request) {
-        // 실무에서 이렇게 해? 한줄로?
-        return ResponseEntity.status(HttpStatus.CREATED).body(customerService.create(request));
+        CustomerResponse response = customerService.create(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "고객 정보 수정", description = "고객의 기본 정보를 수정합니다. 고객 유형(type)은 변경 불가합니다.")
@@ -68,10 +78,12 @@ public class CustomerController {
             @ApiResponse(responseCode = "404", description = "존재하지 않는 고객")
     })
     @PutMapping("/{id}")
-    public ResponseEntity<CustomerResponse> update(@Parameter(description = "고객 ID")
-                                                   @PathVariable Long id,
-                                                   @Valid @RequestBody CustomerUpdateRequest request) {
-        return ResponseEntity.ok(customerService.update(id, request));
+    public ResponseEntity<CustomerResponse> update(
+            @Parameter(description = "고객 ID") @PathVariable Long id,
+            @Valid @RequestBody CustomerUpdateRequest request
+    ) {
+        CustomerResponse response = customerService.update(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(summary = "고객 삭제", description = "고객 정보를 삭제합니다.")
