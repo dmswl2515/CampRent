@@ -72,7 +72,7 @@ public class UserService {
         // JWT 토큰 생성
         String token = jwtUtil.generateToken(
                 user.getUsername(),
-                user.getRole().name() // 왜 여기서 name은 getName안해?
+                user.getRole().name()
         );
 
         // 사용자 정보 DTO 변환
