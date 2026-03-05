@@ -170,6 +170,7 @@ public class RentalServiceTest {
     @DisplayName("대여 시작 성공 - 재고 감소 확인")
     void start_Success() {
         // Given
+        rental.approve(); // PENDING -> APPROVED (start()는 APPROVED 상태에서만 가능)
         given(rentalRepository.findById(1L)).willReturn(Optional.of(rental));
 
         // campingItem의 초기 재고 확인
@@ -190,7 +191,8 @@ public class RentalServiceTest {
     @DisplayName("반납 처리 성공 - 재고 복구 확인")
     void complete_Success() {
         // Given : 대여중 상태로 설정
-        rental.start(); // PENDING -> APPROVED -> IN_PROGRESS
+        rental.approve(); // PENDING -> APPROVED
+        rental.start();   // APPROVED -> IN_PROGRESS
 
         campingItem.decreaseStock(1);
 
