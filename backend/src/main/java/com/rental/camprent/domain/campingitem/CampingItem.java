@@ -1,6 +1,6 @@
 package com.rental.camprent.domain.campingitem;
 
-import com.rental.camprent.domain.common.Season;
+import com.rental.camprent.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -8,7 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -26,6 +25,10 @@ public class CampingItem {
 
     @Column(nullable = false, length = 100)
     private String name;                // 장비명 (예 : 4인용 돔 텐트, 구스다운 침낭)
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;                 // 장비 소유자
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
@@ -53,9 +56,10 @@ public class CampingItem {
     private LocalDateTime updatedAt;    // 수정일시
 
     @Builder
-    public CampingItem(String name, CampingCategory category, String model, String description,
+    public CampingItem(String name, User owner, CampingCategory category, String model, String description,
                        Integer stockQuantity, BigDecimal baseDailyRate, CampingItemStatus status) {
         this.name = name;
+        this.owner = owner;
         this.category = category;
         this.model = model;
         this.description = description;
@@ -67,19 +71,6 @@ public class CampingItem {
     }
 
     // ===== 비즈니스 메서드 (Setter 대신) =====
-
-    /**
-     * 날짜별 일일 대여료 계산 (성수기 50% 할증)
-     */
-    public BigDecimal calculateDailyRate(LocalDate date) {
-        Season season = Season.fromDate(date);
-        if(season.isPeakSeason()) {
-            //성수기 : 50% 할증
-            return baseDailyRate.multiply(BigDecimal.valueOf(1.5));
-        }
-        return baseDailyRate;
-    }
-
     /**
      *  장비 정보 수정
      */

@@ -1,7 +1,7 @@
 package com.rental.camprent.domain.campingrental;
 
-import com.rental.camprent.domain.customer.Customer;
 import com.rental.camprent.domain.campingitem.CampingItem;
+import com.rental.camprent.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -32,8 +32,8 @@ public class Rental {
     private CampingItem machine;            // 대여 기계
 
     @ManyToOne(fetch = FetchType.LAZY)  // 다대일, 지연 로딩
-    @JoinColumn(name = "customer_id", nullable = false)
-    private Customer customer;          // 대여 고객
+    @JoinColumn(name = "renter_id", nullable = false)
+    private User renter;                // 대여자(빌리는 사람)
     // ===== JPA 관계 매핑 끝 =====
 
     @Column(nullable = false)
@@ -63,10 +63,10 @@ public class Rental {
     private LocalDateTime updatedAt;    // 수정일시
 
     @Builder
-    public Rental(CampingItem machine, Customer customer, LocalDate startDate,
+    public Rental(CampingItem machine, User renter, LocalDate startDate,
                   LocalDate endDate, BigDecimal deposit, String notes) {
         this.machine = machine;
-        this.customer = customer;
+        this.renter = renter;
         this.startDate = startDate;
         this.endDate = endDate;
         this.deposit = deposit;
@@ -80,7 +80,6 @@ public class Rental {
     // ===== 비즈니스 메서드 시작 =====
     /**
      *  총 비용 계산 (일일 대여료 * 대여 일 수)
-     *  TODO: 나중에 성수기 요금 반영하도록 수정 예정
      */
     private BigDecimal calculateTotalCost(CampingItem machine, LocalDate startDate, LocalDate endDate) {
         long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;    // 시작일 포함

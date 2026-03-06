@@ -40,6 +40,13 @@ public class User {
     @Column(length =20)
     private String phone;
 
+    @Column(length = 100)
+    private String neighborhood;                        // 동네명(예 : 서초동)
+
+    private Double latitude;                            // 위도
+
+    private Double longitude;                           // 경도
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private UserRole role;                              // 권한 (ADMIN / USER)
@@ -85,6 +92,13 @@ public class User {
     // 마지막 로그인 시간 업데이트
     public void updateLastLogin() {
         this.lastLoginAt = LocalDateTime.now();
+    }
+
+    // 동네 설정
+    public void updateNeighborhood(String neighborhood, Double latitude, Double longitude) {
+        this.neighborhood = neighborhood;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
 
     public void disable() {

@@ -3,21 +3,26 @@
 ## 프로젝트 개요
 
 ### 프로젝트명
-**CampRent** - 캠핑 장비 전문 대여 플랫폼
+**CampRent** - 동네 기반 캠핑 장비 P2P 대여 플랫폼
 
 ### 목적
 - **포트폴리오**: 백엔드 개발자 역량 증명 (복잡한 도메인 로직)
 - **기술 학습**: 최신 기술 스택과 실무 패턴 학습
-- **확장성**: 웹에서 모바일 앱으로 확장 예정
-- **실제 서비스 가능성**: MVP 이후 실제 런칭 검토
+- **실제 서비스 가능성**: MVP 이후 실제 런칭 검토 (당근마켓 스타일 P2P)
+
+### 서비스 방향 (2026-03-06 확정)
+- **B2C → P2P 전환**: 관리자 운영 방식에서 사용자 간 직거래 방식으로 변경
+- 사용자가 자신의 캠핑 장비를 직접 등록하고 가격 설정
+- 동네 기반으로 근처 장비 검색 및 대여
+- 빌려주는 사람 / 빌리는 사람 모두 동일한 User
 
 ### 비즈니스 요구사항
 1. 캠핑 장비 카테고리별 관리 (텐트, 침낭, 버너 등)
-2. **계절별 가격 정책** (성수기 할증, 비수기 할인)
-3. **패키지 시스템** (여러 장비 묶음 할인)
-4. 대여 정보 관리 (고객, 기간, 비용, 보증금)
-5. **날씨 기반 추천** (외부 API 연동)
-6. 캠핑 초보자 가이드
+2. **사용자가 직접 가격 설정** (P2P 방식, 계절별 가격 정책 불필요)
+3. 대여 정보 관리 (대여자, 기간, 비용, 보증금)
+4. **동네 기반 검색** (User 프로필의 neighborhood 기준)
+5. **날씨 기반 추천** (외부 API 연동, Phase 2)
+6. **후기/평점 시스템** (신뢰도, Phase 2)
 
 ---
 
@@ -288,16 +293,19 @@ public CampingPackage recommendPackageByLevel(CampingLevel level) {
 
 ### 사용자 의도
 - 포트폴리오용이므로 **Best Practice** 적용 중요
-- 하나씩 배우며 만들고 싶음 - **설명 필요**
+- **직접 타이핑하며 공부**: 코드를 제공하면 사용자가 직접 따라 치며 학습
 - 확장 가능한 구조 - **모듈화, 재사용성**
 - 기술적 도전 과제 포함 (외부 API, 복잡한 로직)
 
-### 응답 방식
-- 코드 제공 시 왜 이렇게 작성했는지 설명
-- 단계별로 진행 (한 번에 다 하지 말 것)
-- 실무 패턴과 이유 설명
-- 대안이 있으면 함께 제시
-- 새로운 개념은 예시와 함께 설명
+### 응답 방식 (CRITICAL - 반드시 준수)
+1. **개념 먼저, 코드 나중**: 코드를 보여주기 전에 반드시 개념과 이유를 먼저 설명
+2. **한 단계씩**: 한 번에 하나의 파일 또는 하나의 개념만 진행
+3. **질의응답 방식**: 각 단계 후 사용자의 확인/질문을 기다린 후 다음 단계 진행
+4. **절대 한꺼번에 많은 양 제공 금지**: 정보 과부하 주의
+5. 코드 작성 이유 설명 (왜 이렇게 작성했는지)
+6. 실무 패턴과 이유 설명
+7. 대안이 있으면 함께 제시
+8. 새로운 개념은 예시와 함께 설명
 
 ### 리팩토링 시 주의사항
 - 기존 코드 구조 최대한 활용
@@ -307,6 +315,33 @@ public CampingPackage recommendPackageByLevel(CampingLevel level) {
 
 ---
 
+## P2P 전환 작업 현황 (2026-03-06 시작)
+
+### 전환 배경
+B2C(관리자 운영) → P2P(사용자 간 직거래) 방향으로 재설계.
+당근마켓처럼 내 동네 사람에게 캠핑 장비를 빌려주는 서비스.
+
+### 설계 결정사항
+- 위치 정보: **User 프로필**에 `neighborhood` (동네명) 저장
+- 수량: 게시글 1개에 `stockQuantity`로 관리 (2개 보유 → 수량=2)
+- Customer 엔티티 **삭제** → User로 통합
+- `CampingItem.owner` (User FK) 추가 - 장비 소유자
+- `Rental.renter` (User FK) - Customer 대신 User
+- `Season.java` 삭제 (P2P는 사용자가 직접 가격 설정)
+
+### P2P 전환 단계별 진행 상황
+- [ ] Step 1: `User.java` - `neighborhood`, `latitude`, `longitude` 필드 추가
+- [ ] Step 2: `CampingItem.java` - `owner` (User FK) 추가, `calculateDailyRate()` 제거
+- [ ] Step 3: `Rental.java` - `customer` → `renter` (User FK) 교체
+- [ ] Step 4: Customer 관련 파일 전체 삭제 (Customer, CustomerType, CustomerRepository, CustomerService, CustomerController, 관련 DTO)
+- [ ] Step 5: `RentalService.java` - `customerRepository` → `userRepository` 교체
+- [ ] Step 6: DTO 수정 (RentalCreateRequest, RentalResponse)
+- [ ] Step 7: `V1__Init_schema.sql` 수정 (초기 스키마라 직접 수정)
+- [ ] Step 8: `RentalServiceTest.java` - Customer → User로 테스트 데이터 교체
+
+---
+
 **작성일**: 2025-12-19
-**현재 상태**: 기본 Entity 완성 (Machine, Customer, Rental, User) - 캠핑 도메인으로 전환 시작
-**다음 단계**: 새 Enum 및 Entity 작성 (CampingCategory, Season, CampingItem, CampingRental)
+**최종 업데이트**: 2026-03-06
+**현재 상태**: P2P 전환 시작 전 (Step 1 대기 중)
+**다음 단계**: Step 1 - User 엔티티에 위치 정보 추가
